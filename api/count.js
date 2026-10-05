@@ -9,12 +9,22 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Upstash Redis environment variables provided automatically by Vercel
-  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  // Upstash Redis environment variables
+  const url =
+    process.env.UPSTASH_REDIS_REST_URL ||
+    process.env.KV_REST_API_URL ||
+    process.env.REDIS_REST_URL ||
+    process.env.UPSTASH_URL;
+  const token =
+    process.env.UPSTASH_REDIS_REST_TOKEN ||
+    process.env.KV_REST_API_TOKEN ||
+    process.env.REDIS_REST_TOKEN ||
+    process.env.UPSTASH_TOKEN;
 
   if (!url || !token) {
-    // Fallback if Redis is not configured yet
+    console.warn(
+      "Notice: Upstash Redis environment variables are missing in Vercel. Connect your Upstash Redis database to this project in Vercel (Project > Storage > Connect)."
+    );
     return res.status(200).json({ count: 291 });
   }
 
