@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Text Obfuscator</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --surface-subtle: #f8f9fa;
+      --border: #d0d7de;
+      --border-focus: #0969da;
+      --text: #1f2328;
+      --text-muted: #656d76;
+      --btn-bg: #f6f8fa;
+      --btn-border: #d0d7de;
+      --btn-text: #1f2328;
+      --btn-hover: #eaeef2;
+      --btn-primary-bg: #1f2328;
+      --btn-primary-text: #ffffff;
+      --btn-primary-hover: #32383f;
+      --tag-bg: #eaeef2;
+      --tag-border: #afb8c1;
+      --tag-text: #24292f;
+      --toast-bg: #1f2328;
+      --toast-text: #ffffff;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0d1117;
+      --surface: #0d1117;
+      --surface-subtle: #161b22;
+      --border: #30363d;
+      --border-focus: #58a6ff;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --btn-bg: #21262d;
+      --btn-border: #30363d;
+      --btn-text: #c9d1d9;
+      --btn-hover: #30363d;
+      --btn-primary-bg: #f0f6fc;
+      --btn-primary-text: #0d1117;
+      --btn-primary-hover: #c9d1d9;
+      --tag-bg: #30363d;
+      --tag-border: #6e7681;
+      --tag-text: #e6edf3;
+      --toast-bg: #f0f6fc;
+      --toast-text: #0d1117;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 14px;
+    }
+
+    .header-text h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: 2px;
+    }
+
+    .header-text p {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .controls-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .control-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+    }
+
+    .control-item label {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    input[type="range"] {
+      width: 130px;
+      cursor: pointer;
+    }
+
+    .rate-indicator {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text);
+      min-width: 36px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      padding: 8px 12px;
+      background: var(--surface-subtle);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+    }
+
+    .panel-title {
+      font-weight: 600;
+    }
+
+    .panel-stats {
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+
+    .textarea-container {
+      position: relative;
+      flex: 1;
+      min-height: 340px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 340px;
+      padding: 12px;
+      background: var(--surface);
+      border: none;
+      color: var(--text);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+    }
+
+    textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    .inspector-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 12px;
+      background: var(--surface);
+      color: var(--text);
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      display: none;
+    }
+
+    .inspector-layer.visible {
+      display: block;
+    }
+
+    .zw-tag {
+      display: inline-block;
+      background: var(--tag-bg);
+      border: 1px solid var(--tag-border);
+      color: var(--tag-text);
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 0 4px;
+      border-radius: 3px;
+      margin: 0 1px;
+      vertical-align: baseline;
+      user-select: none;
+    }
+
+    .panel-footer {
+      padding: 8px 12px;
+      background: var(--surface-subtle);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      transition: background-color 0.1s ease, border-color 0.1s ease;
+      outline: none;
+    }
+
+    .btn:hover {
+      background: var(--btn-hover);
+    }
+
+    .btn:active {
+      opacity: 0.85;
+    }
+
+    .btn-primary {
+      background: var(--btn-primary-bg);
+      border-color: var(--btn-primary-bg);
+      color: var(--btn-primary-text);
+    }
+
+    .btn-primary:hover {
+      background: var(--btn-primary-hover);
+      border-color: var(--btn-primary-hover);
+    }
+
+    .status-bar {
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text-muted);
+    }
+
+    .status-text {
+      color: var(--text);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--toast-bg);
+      color: var(--toast-text);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div class="header-text">
+        <h1>Text Obfuscator</h1>
+        <p>Inserts invisible zero-width Unicode spaces into character sequences.</p>
+      </div>
+      <div>
+        <button class="btn" id="themeToggle" type="button">Theme: Dark</button>
+      </div>
+    </div>
+
+    <!-- Controls Panel -->
+    <div class="controls-panel">
+      <div class="control-item">
+        <label for="rateSlider">Frequency:</label>
+        <input type="range" id="rateSlider" min="5" max="100" step="5" value="25" />
+        <span class="rate-indicator" id="rateValue">25%</span>
+      </div>
+
+      <div class="control-item">
+        <label class="checkbox-item">
+          <input type="checkbox" id="insideWords" checked />
+          Inside words only
+        </label>
+      </div>
+
+      <div class="control-item">
+        <label class="checkbox-item">
+          <input type="checkbox" id="toggleInspector" />
+          Show hidden character tags
+        </label>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" id="obfuscateBtn" type="button">Obfuscate</button>
+        <button class="btn" id="stripBtn" type="button">Clean</button>
+      </div>
+    </div>
+
+    <!-- Workspace Panels -->
+    <div class="workspace">
+      <!-- Input Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Input</span>
+          <span class="panel-stats" id="inputStats">0 chars / 0 words</span>
+        </div>
+        <div class="textarea-container">
+          <textarea id="inputText" placeholder="Paste or type text here..."></textarea>
+        </div>
+        <div class="panel-footer">
+          <button class="btn" id="pasteBtn" type="button">Paste</button>
+          <button class="btn" id="sampleBtn" type="button">Sample Text</button>
+          <button class="btn" id="clearBtn" type="button">Clear</button>
+        </div>
+      </div>
+
+      <!-- Output Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Output</span>
+          <span class="panel-stats" id="outputStats">0 chars / 0 injected</span>
+        </div>
+        <div class="textarea-container">
+          <textarea id="outputText" readonly placeholder="Output will appear here..."></textarea>
+          <div id="inspectorLayer" class="inspector-layer"></div>
+        </div>
+        <div class="panel-footer">
+          <button class="btn btn-primary" id="copyBtn" type="button">Copy to Clipboard</button>
+          <button class="btn" id="downloadBtn" type="button">Download .txt</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span class="status-text" id="statusMessage">Ready</span>
+      <span>Characters: ZWSP (U+200B), ZWNJ (U+200C), ZWJ (U+200D), BOM (U+FEFF)</span>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Copied to clipboard</div>
+
+  <script>
+    const CHARACTERS = [
+      { char: "\u200B", label: "ZWSP" },
+      { char: "\u200C", label: "ZWNJ" },
+      { char: "\u200D", label: "ZWJ"  },
+      { char: "\uFEFF", label: "BOM"  }
+    ];
+
+    const rawChars = CHARACTERS.map(c => c.char);
+
+    const inputText = document.getElementById("inputText");
+    const outputText = document.getElementById("outputText");
+    const inspectorLayer = document.getElementById("inspectorLayer");
+    const rateSlider = document.getElementById("rateSlider");
+    const rateValue = document.getElementById("rateValue");
+    const insideWords = document.getElementById("insideWords");
+    const toggleInspector = document.getElementById("toggleInspector");
+    const themeToggle = document.getElementById("themeToggle");
+
+    const inputStats = document.getElementById("inputStats");
+    const outputStats = document.getElementById("outputStats");
+    const statusMessage = document.getElementById("statusMessage");
+    const toast = document.getElementById("toast");
+
+    // Theme switching logic
+    function initTheme() {
+      const saved = localStorage.getItem("theme") || "light";
+      applyTheme(saved);
+    }
+
+    function applyTheme(theme) {
+      if (theme === "dark") {
+        document.documentElement.setAttribute("data-theme", "dark");
+        themeToggle.textContent = "Theme: Light";
+        localStorage.setItem("theme", "dark");
+      } else {
+        document.documentElement.removeAttribute("data-theme");
+        themeToggle.textContent = "Theme: Dark";
+        localStorage.setItem("theme", "light");
+      }
+    }
+
+    themeToggle.addEventListener("click", () => {
+      const current = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+      applyTheme(current === "dark" ? "light" : "dark");
+    });
+
+    const SAMPLE = "Modern text detection evaluates syntactic patterns and token sequences. By inserting zero-width non-printing characters into character sequences, tokenization is altered while visual presentation remains completely unchanged.";
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 1800);
+    }
+
+    function updateInputStats() {
+      const text = inputText.value;
+      const chars = text.length;
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      inputStats.textContent = `${chars} chars / ${words} words`;
+    }
+
+    function isAlphanumeric(c) {
+      return /^[a-zA-Z0-9]$/.test(c);
+    }
+
+    function isWhitespace(c) {
+      return /\s/.test(c);
+    }
+
+    function stripChars(text) {
+      let cleaned = text;
+      for (const c of rawChars) {
+        cleaned = cleaned.replaceAll(c, "");
+      }
+      return cleaned;
+    }
+
+    function inject(text, probability, onlyWords) {
+      if (!text) return "";
+      const result = [];
+      const len = text.length;
+
+      for (let i = 0; i < len; i++) {
+        const c = text[i];
+        result.push(c);
+
+        if (i >= len - 1) continue;
+
+        const next = text[i + 1];
+        let eligible = false;
+
+        if (onlyWords) {
+          eligible = isAlphanumeric(c) && isAlphanumeric(next);
+        } else {
+          eligible = !isWhitespace(c) && !isWhitespace(next);
+        }
+
+        if (eligible && Math.random() < probability) {
+          const picked = rawChars[Math.floor(Math.random() * rawChars.length)];
+          result.push(picked);
+        }
+      }
+      return result.join("");
+    }
+
+    function countInjected(text) {
+      let count = 0;
+      for (const char of text) {
+        if (rawChars.includes(char)) count++;
+      }
+      return count;
+    }
+
+    function renderInspector(text) {
+      inspectorLayer.innerHTML = "";
+      if (!text) return;
+
+      const fragment = document.createDocumentFragment();
+      for (const char of text) {
+        const item = CHARACTERS.find(c => c.char === char);
+        if (item) {
+          const span = document.createElement("span");
+          span.className = "zw-tag";
+          span.textContent = item.label;
+          fragment.appendChild(span);
+        } else {
+          fragment.appendChild(document.createTextNode(char));
+        }
+      }
+      inspectorLayer.appendChild(fragment);
+    }
+
+    function runObfuscation() {
+      const text = inputText.value;
+      if (!text.trim()) {
+        outputText.value = "";
+        renderInspector("");
+        outputStats.textContent = "0 chars / 0 injected";
+        statusMessage.textContent = "Ready";
+        return;
+      }
+
+      const cleaned = stripChars(text);
+      const prob = parseInt(rateSlider.value, 10) / 100;
+      const result = inject(cleaned, prob, insideWords.checked);
+      const injected = countInjected(result);
+
+      outputText.value = result;
+      renderInspector(result);
+
+      outputStats.textContent = `${result.length} chars / ${injected} injected`;
+      statusMessage.textContent = `Injected ${injected} characters`;
+    }
+
+    inputText.addEventListener("input", () => {
+      updateInputStats();
+      runObfuscation();
+    });
+
+    rateSlider.addEventListener("input", (e) => {
+      rateValue.textContent = `${e.target.value}%`;
+      runObfuscation();
+    });
+
+    insideWords.addEventListener("change", runObfuscation);
+
+    toggleInspector.addEventListener("change", (e) => {
+      if (e.target.checked) {
+        inspectorLayer.classList.add("visible");
+      } else {
+        inspectorLayer.classList.remove("visible");
+      }
+    });
+
+    document.getElementById("obfuscateBtn").addEventListener("click", () => {
+      runObfuscation();
+      showToast("Updated");
+    });
+
+    document.getElementById("stripBtn").addEventListener("click", () => {
+      const original = inputText.value;
+      const cleaned = stripChars(original);
+      const removed = original.length - cleaned.length;
+      inputText.value = cleaned;
+      updateInputStats();
+      runObfuscation();
+      showToast(`Removed ${removed} characters`);
+    });
+
+    document.getElementById("sampleBtn").addEventListener("click", () => {
+      inputText.value = SAMPLE;
+      updateInputStats();
+      runObfuscation();
+    });
+
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      inputText.value = "";
+      outputText.value = "";
+      renderInspector("");
+      updateInputStats();
+      outputStats.textContent = "0 chars / 0 injected";
+      statusMessage.textContent = "Cleared";
+    });
+
+    document.getElementById("pasteBtn").addEventListener("click", async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        inputText.value = text;
+        updateInputStats();
+        runObfuscation();
+        showToast("Pasted");
+      } catch (err) {
+        alert("Clipboard permission unavailable. Paste directly with Ctrl+V.");
+      }
+    });
+
+    document.getElementById("copyBtn").addEventListener("click", async () => {
+      if (!outputText.value) {
+        showToast("Nothing to copy");
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(outputText.value);
+        showToast("Copied to clipboard");
+      } catch (e) {
+        outputText.select();
+        document.execCommand("copy");
+        showToast("Copied to clipboard");
+      }
+    });
+
+    document.getElementById("downloadBtn").addEventListener("click", () => {
+      if (!outputText.value) {
+        showToast("Nothing to download");
+        return;
+      }
+      const blob = new Blob([outputText.value], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "output.txt";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // Initialize
+    initTheme();
+    inputText.value = SAMPLE;
+    updateInputStats();
+    runObfuscation();
+  </script>
+</body>
+</html>
