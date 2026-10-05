@@ -1,0 +1,12 @@
+{
+  "name": "ai-evasion",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Zero-width character obfuscator with real-time web UI and unique visitor tracking",
+  "scripts": {
+    "start": "node -e \"console.log('Run with python app.py or vercel dev')\""
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.34.3"
+  }
+}

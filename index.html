@@ -462,7 +462,7 @@
     <!-- Footer -->
     <footer class="footer">
       <div class="footer-left">
-        <span class="user-counter-text">Trusted by <strong id="userCount">128</strong> slop spammers</span>
+        <span class="user-counter-text">Trusted by <strong id="userCount">291</strong> slop spammers</span>
       </div>
       <div class="footer-right">
         <span>Support:</span>
@@ -727,24 +727,36 @@
       URL.revokeObjectURL(url);
     });
 
-    async function initUserCounter() {
-      // Trigger visitor logging
-      try {
-        const ping = new Image();
-        ping.src = "https://api.visitorbadge.io/api/visitors?path=codebreaker77.ai-evasion&t=" + Date.now();
-      } catch (e) {}
-
-      // Calculate displayed users (seed + unique session tracker)
-      let visits = parseInt(localStorage.getItem("totallyhuman_visits") || "0", 10);
-      visits += 1;
-      localStorage.setItem("totallyhuman_visits", visits.toString());
-
-      const baseCount = 342;
-      const totalCount = baseCount + visits;
-      const countEl = document.getElementById("userCount");
-      if (countEl) {
-        countEl.textContent = totalCount.toLocaleString();
+    function getOrCreateVisitorId() {
+      let id = localStorage.getItem("totallyhuman_visitor_id");
+      if (!id) {
+        id = (typeof crypto !== "undefined" && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : "v_" + Math.random().toString(36).substring(2) + Date.now().toString(36);
+        localStorage.setItem("totallyhuman_visitor_id", id);
       }
+      return id;
+    }
+
+    async function initUserCounter() {
+      const countEl = document.getElementById("userCount");
+      const visitorId = getOrCreateVisitorId();
+
+      try {
+        const res = await fetch(`/api/count?visitorId=${encodeURIComponent(visitorId)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof data.count === "number") {
+            countEl.textContent = data.count.toLocaleString();
+            return;
+          }
+        }
+      } catch (e) {
+        // Fallback when running standalone or offline
+      }
+
+      // Standalone / offline fallback
+      countEl.textContent = "291";
     }
 
     async function fetchStars() {
