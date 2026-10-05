@@ -2,8 +2,20 @@ import Redis from 'ioredis';
 
 let redisClient = null;
 
+function getRedisUrl() {
+  if (process.env.Store_REDIS_URL) return process.env.Store_REDIS_URL;
+  if (process.env.STORE_REDIS_URL) return process.env.STORE_REDIS_URL;
+  if (process.env.REDIS_URL) return process.env.REDIS_URL;
+
+  // Scan for any environment variable ending in REDIS_URL (e.g. prefix_REDIS_URL)
+  const key = Object.keys(process.env).find(k => k.toUpperCase().endsWith('REDIS_URL'));
+  if (key) return process.env[key];
+
+  return null;
+}
+
 function getRedis() {
-  const redisUrl = process.env.REDIS_URL;
+  const redisUrl = getRedisUrl();
   if (!redisUrl) {
     return null;
   }
