@@ -21,11 +21,20 @@ export default async function handler(req, res) {
     process.env.REDIS_REST_TOKEN ||
     process.env.UPSTASH_TOKEN;
 
+  const availableKeys = Object.keys(process.env).filter(k =>
+    k.toUpperCase().includes('REDIS') ||
+    k.toUpperCase().includes('KV') ||
+    k.toUpperCase().includes('UPSTASH')
+  );
+
   if (!url || !token) {
-    console.warn(
-      "Notice: Upstash Redis environment variables are missing in Vercel. Connect your Upstash Redis database to this project in Vercel (Project > Storage > Connect)."
-    );
-    return res.status(200).json({ count: 291 });
+    return res.status(200).json({
+      count: 291,
+      debug: {
+        error: "missing_redis_env_vars",
+        foundKeys: availableKeys
+      }
+    });
   }
 
   const redis = new Redis({ url, token });
@@ -62,6 +71,12 @@ export default async function handler(req, res) {
     return res.status(200).json({ count: Number(count) || 291 });
   } catch (error) {
     console.error('Redis count error:', error);
-    return res.status(200).json({ count: 291 });
+    return res.status(200).json({
+      count: 291,
+      debug: {
+        error: "redis_exception",
+        message: error.message
+      }
+    });
   }
 }
