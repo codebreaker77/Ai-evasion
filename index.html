@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Text Obfuscator</title>
+  <title>TOTALLYHUMAN :)</title>
   <style>
     :root {
       --bg: #ffffff;
@@ -306,6 +306,54 @@
       color: var(--text);
     }
 
+    .footer {
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-counter-text strong {
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+
+    .btn-star {
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+    }
+
+    .star-badge {
+      background: var(--tag-bg);
+      border: 1px solid var(--tag-border);
+      color: var(--tag-text);
+      font-size: 0.75rem;
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+      font-family: var(--font-mono);
+    }
+
     .toast {
       position: fixed;
       bottom: 20px;
@@ -334,7 +382,7 @@
     <!-- Top Bar -->
     <div class="top-bar">
       <div class="header-text">
-        <h1>Text Obfuscator</h1>
+        <h1>TOTALLYHUMAN :)</h1>
         <p>Inserts invisible zero-width Unicode spaces into character sequences.</p>
       </div>
       <div>
@@ -410,6 +458,23 @@
       <span class="status-text" id="statusMessage">Ready</span>
       <span>Characters: ZWSP (U+200B), ZWNJ (U+200C), ZWJ (U+200D), BOM (U+FEFF)</span>
     </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-left">
+        <span class="user-counter-text">Trusted by <strong id="userCount">128</strong> slop spammers</span>
+      </div>
+      <div class="footer-right">
+        <span>Support:</span>
+        <a href="https://github.com/codebreaker77/Ai-evasion" target="_blank" rel="noopener noreferrer" class="btn btn-star" title="Star codebreaker77/Ai-evasion on GitHub">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: -2px; margin-right: 4px;">
+            <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
+          </svg>
+          Star on GitHub
+          <span class="star-badge" id="starBadge">★</span>
+        </a>
+      </div>
+    </footer>
   </div>
 
   <div id="toast" class="toast">Copied to clipboard</div>
@@ -662,8 +727,43 @@
       URL.revokeObjectURL(url);
     });
 
+    async function initUserCounter() {
+      // Trigger visitor logging
+      try {
+        const ping = new Image();
+        ping.src = "https://api.visitorbadge.io/api/visitors?path=codebreaker77.ai-evasion&t=" + Date.now();
+      } catch (e) {}
+
+      // Calculate displayed users (seed + unique session tracker)
+      let visits = parseInt(localStorage.getItem("totallyhuman_visits") || "0", 10);
+      visits += 1;
+      localStorage.setItem("totallyhuman_visits", visits.toString());
+
+      const baseCount = 342;
+      const totalCount = baseCount + visits;
+      const countEl = document.getElementById("userCount");
+      if (countEl) {
+        countEl.textContent = totalCount.toLocaleString();
+      }
+    }
+
+    async function fetchStars() {
+      try {
+        const res = await fetch("https://api.github.com/repos/codebreaker77/Ai-evasion");
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof data.stargazers_count === "number") {
+            const badge = document.getElementById("starBadge");
+            if (badge) badge.textContent = `★ ${data.stargazers_count}`;
+          }
+        }
+      } catch (e) {}
+    }
+
     // Initialize
     initTheme();
+    initUserCounter();
+    fetchStars();
     inputText.value = SAMPLE;
     updateInputStats();
     runObfuscation();
