@@ -7,6 +7,6 @@
     "start": "node -e \"console.log('Run with python app.py or vercel dev')\""
   },
   "dependencies": {
-    "@upstash/redis": "^1.34.3"
+    "ioredis": "^5.4.2"
   }
 }

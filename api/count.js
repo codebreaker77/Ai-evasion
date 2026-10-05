@@ -1,4 +1,22 @@
-import { Redis } from '@upstash/redis';
+import Redis from 'ioredis';
+
+let redisClient = null;
+
+function getRedis() {
+  const redisUrl = process.env.REDIS_URL;
+  if (!redisUrl) {
+    return null;
+  }
+
+  if (!redisClient) {
+    redisClient = new Redis(redisUrl, {
+      maxRetriesPerRequest: 2,
+      connectTimeout: 5000,
+      lazyConnect: false,
+    });
+  }
+  return redisClient;
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -9,38 +27,14 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Upstash Redis environment variables
-  const url =
-    process.env.UPSTASH_REDIS_REST_URL ||
-    process.env.KV_REST_API_URL ||
-    process.env.REDIS_REST_URL ||
-    process.env.UPSTASH_URL;
-  const token =
-    process.env.UPSTASH_REDIS_REST_TOKEN ||
-    process.env.KV_REST_API_TOKEN ||
-    process.env.REDIS_REST_TOKEN ||
-    process.env.UPSTASH_TOKEN;
-
-  const availableKeys = Object.keys(process.env).filter(k =>
-    k.toUpperCase().includes('REDIS') ||
-    k.toUpperCase().includes('KV') ||
-    k.toUpperCase().includes('UPSTASH')
-  );
-
-  if (!url || !token) {
-    return res.status(200).json({
-      count: 291,
-      debug: {
-        error: "missing_redis_env_vars",
-        foundKeys: availableKeys
-      }
-    });
+  const redis = getRedis();
+  if (!redis) {
+    console.warn('Notice: REDIS_URL environment variable is not set.');
+    return res.status(200).json({ count: 291 });
   }
 
-  const redis = new Redis({ url, token });
-
   try {
-    // Identify the unique user using client visitorId + IP address
+    // Identify unique visitor using client token + IP
     const clientVisitorId = req.query.visitorId || 'anonymous';
     const rawIp =
       req.headers['x-forwarded-for'] ||
@@ -54,12 +48,12 @@ export default async function handler(req, res) {
     let count;
 
     if (current === null || current === undefined) {
-      // First time initialization: start at 291 for the first user
+      // First user initialization: seed at 291
       await redis.set('slop_spammer_count', 291);
       await redis.sadd('unique_visitors', uniqueKey);
       count = 291;
     } else {
-      // Check if this visitor is unique
+      // Check if visitor is unique
       const isNew = await redis.sadd('unique_visitors', uniqueKey);
       if (isNew === 1) {
         count = await redis.incr('slop_spammer_count');
@@ -70,13 +64,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ count: Number(count) || 291 });
   } catch (error) {
-    console.error('Redis count error:', error);
-    return res.status(200).json({
-      count: 291,
-      debug: {
-        error: "redis_exception",
-        message: error.message
-      }
-    });
+    console.error('Redis error:', error);
+    return res.status(200).json({ count: 291, error: error.message });
   }
 }
